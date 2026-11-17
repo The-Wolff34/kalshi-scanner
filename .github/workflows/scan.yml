@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: "*/10 * * * *"   # every 10 minutes (GitHub may run it a few minutes late)
   workflow_dispatch:          # lets you run it by hand from the Actions tab
+    inputs:
+      test_notify:
+        description: "Send a test alert to Discord"
+        type: boolean
+        default: false
 
 concurrency:
   group: kalshi-scanner
@@ -22,6 +27,13 @@ jobs:
           path: scanner_state.json
           key: scanner-state-${{ github.run_id }}
           restore-keys: scanner-state-
+
+      - name: Send a test alert
+        if: ${{ inputs.test_notify }}
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          NTFY_TOPIC: ""
+        run: python3 kalshi_value_scanner.py --test-notify
 
       - name: Scan Kalshi for value
         env:
