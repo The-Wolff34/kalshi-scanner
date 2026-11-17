@@ -1,0 +1,41 @@
+name: Kalshi value scanner
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"   # every 10 minutes (GitHub may run it a few minutes late)
+  workflow_dispatch:          # lets you run it by hand from the Actions tab
+
+concurrency:
+  group: kalshi-scanner
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      # Bring back saved odds + already-sent alerts from the last run
+      - uses: actions/cache/restore@v4
+        with:
+          path: scanner_state.json
+          key: scanner-state-${{ github.run_id }}
+          restore-keys: scanner-state-
+
+      - name: Scan Kalshi for value
+        env:
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          NTFY_TOPIC: ""
+        run: python3 kalshi_value_scanner.py --once
+
+      - name: Make sure there is a state file to save
+        if: always()
+        run: '[ -f scanner_state.json ] || echo "{}" > scanner_state.json'
+
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: scanner_state.json
+          key: scanner-state-${{ github.run_id }}
