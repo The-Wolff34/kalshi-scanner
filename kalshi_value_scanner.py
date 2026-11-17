@@ -1,5 +1,3 @@
-# test line
-print("hi")
 #!/usr/bin/env python3
 """
 Kalshi Sports Value Scanner
